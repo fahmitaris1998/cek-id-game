@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+   <head>
+      <meta charset="UTF-8" />
+      <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <title>Cek ID Game</title>
+      <script src="https://cdn.tailwindcss.com"></script>
+   </head>
+   <body>
+      <div class="w-full bg-slate-100 min-h-screen flex justify-center">
+         <div class="md:w-1/2 w-full flex flex-col gap-4">
+            <div class="w-full h-14 flex items-center justify-center bg-white rounded-md shadow-sm px-3 md:px-0">
+               <h1 class="text-xl font-bold">Cek ID Game</h1>
+            </div>
+            <form action="" class="flex flex-col gap-2 px-3 md:px-0">
+               <div class="form-group flex flex-col gap-2">
+                  <label for="id" class="text-sm">Zone Id</label>
+                  <select
+                     name="game"
+                     id="game"
+                     class="p-2 rounded bg-white focus:outline-blue-500 shadow-sm text-sm"
+                     placeholder="Pilih Game"
+                  ></select>
+               </div>
+               <div class="form-group flex flex-col gap-2">
+                  <label for="id" class="text-sm">ID Game</label>
+                  <input
+                     type="text"
+                     name="id"
+                     id="id"
+                     class="p-2 rounded bg-white focus:outline-blue-500 shadow-sm text-sm"
+                     placeholder="Masukkan Game"
+                  />
+               </div>
+
+               <div class="form-group flex flex-col gap-2" id="zone-form"></div>
+
+               <button type="submit" class="p-2 rounded bg-blue-800 text-white text-sm shadow-sm hover:opacity-70 mt-3">
+                  Submit
+               </button>
+            </form>
+            <div class="card p-3 rounded-md bg-white shadow pt-3 flex flex-col gap-2 mx-3 md:mx-0" id="result"></div>
+         </div>
+      </div>
+
+      <script>
+         document.querySelector('#result').classList.add('hidden');
+
+         const game = document.querySelector('#game');
+         (async () => {
+            const res = await fetch('/api');
+            try {
+               const data = await res.json();
+               data.data.forEach((item) => {
+                  const option = document.createElement('option');
+                  option.value = item.endpoint;
+                  option.textContent = item.name;
+                  option.setAttribute('data-isZone', item.hasZoneId);
+                  option.setAttribute('data-listZone', item.listZoneId);
+
+                  game.appendChild(option);
+               });
+            } catch (error) {
+               console.log(error);
+            }
+         })();
+
+         const gameOption = document.querySelectorAll('#game');
+         game.addEventListener('change', (e) => {
+            const option = e.target.options[e.target.selectedIndex];
+            const isZone = option.getAttribute('data-isZone');
+            const listZone = option.getAttribute('data-listZone');
+            const zoneForm = document.querySelector('#zone-form');
+
+            if (isZone == 'true' && listZone == 'null') {
+               const zoneLabel = document.createElement('label');
+               zoneLabel.classList.add('text-sm');
+               zoneForm.innerHTML = `<input
+                     type="text"
+                     name="zone"
+                     id="zone"
+                     class="p-2 rounded bg-white focus:outline-blue-500 shadow-sm text-sm"
+                     placeholder="Masukkan ID Game"
+                  />`;
+               zoneForm.prepend(zoneLabel);
+               zoneLabel.textContent = 'Zone ID';
+            } else if (isZone == 'true' && listZone != 'null') {
+               const getListZone = async () => {
+                  zoneForm.innerHTML = '';
+                  const zone = document.createElement('select');
+                  zone.classList.add('p-2', 'rounded', 'bg-white', 'focus:outline-blue-500', 'shadow-sm', 'text-sm');
+                  zone.setAttribute('id', 'zone');
+                  const zoneLabel = document.createElement('label');
+                  zoneLabel.classList.add('text-sm');
+                  const listZoneId = await fetch(`${option.getAttribute('data-listZone')}`);
+
+                  try {
+                     const listZoneIdJson = await listZoneId.json();
+
+                     listZoneIdJson.data?.forEach((item) => {
+                        const option = document.createElement('option');
+                        option.value = item.zoneId;
+                        option.textContent = item.name;
+
+                        zone.appendChild(option);
+                     });
+                     zoneForm.appendChild(zone);
+                     zoneForm.prepend(zoneLabel);
+                     zoneLabel.textContent = 'Zone ID';
+                  } catch (error) {
+                     console.log(error.message);
+                  }
+               };
+
+               getListZone();
+            } else {
+               zoneForm.innerHTML = '';
+            }
+         });
+
+         const form = document.querySelector('form');
+         const id = document.querySelector('#id');
+         const zone = document.querySelector('#zone');
+
+         form.addEventListener('submit', (e) => {
+            document.querySelector('#result').classList.add('hidden');
+            document.querySelector('button').classList.add('opacity-50');
+            document.querySelector('button').classList.add('cursor-not-allowed');
+            document.querySelector('button').setAttribute('disabled', 'disabled');
+            document.querySelector('button').textContent = 'Loading...';
+
+            e.preventDefault();
+
+            if (e.target.id.value === '' || e.target.game.value === '' || e.target?.zone?.value === '') {
+               alert('ID Game dan Zone ID tidak boleh kosong');
+            } else {
+               (async () => {
+                  const res = await fetch(
+                     `${e.target.game.value}?id=${encodeURIComponent(e.target.id.value)}&zone=${
+                        e.target?.zone?.value || ''
+                     }`
+                  );
+                  try {
+                     const data = await res.json();
+                     if (data.status) {
+                        let resHtml = `<h3 class="text-lg">Result</h3><p class="text-sm">Username: ${
+                           data.data?.username
+                        }</p><p class="text-sm">ID: ${data.data?.user_id}</p><p class="text-sm">Zone: ${
+                           data.data?.zone_id || ''
+                        }</p>`;
+                        document.querySelector('#result').innerHTML = resHtml;
+                        document.querySelector('#result').classList.remove('hidden');
+                     } else {
+                        let resHtml = `<h3 class="text-lg">Result</h3><p class="text-sm">${data.message}</p>`;
+                        document.querySelector('#result').innerHTML = resHtml;
+                        document.querySelector('#result').classList.remove('hidden');
+                     }
+                  } catch (error) {
+                     console.log(error);
+                  }
+                  document.querySelector('button').classList.remove('opacity-50');
+                  document.querySelector('button').classList.remove('cursor-not-allowed');
+                  document.querySelector('button').removeAttribute('disabled');
+                  document.querySelector('button').textContent = 'Submit';
+               })();
+            }
+         });
+      </script>
+   </body>
+</html>

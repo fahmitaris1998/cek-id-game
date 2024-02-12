@@ -1,0 +1,16 @@
+[2023-07-14]
+- Fix undefined req body zoneId
+- Add Url Encode in Index.html For Id Game From Riot
+- Fix Lords Mobile Check
+
+[2023-04-18]
+- Add AU2Mobile [Codashop]
+- Add Revelation: Infinite Journey [Codashop]
+- Add Script Update List Game [See documentation.txt]
+
+[OLD]
+- Lupa pokoknya versi awal
+
+
+wish:
+Refactor Code and Rewrite the code to be Clean Code
